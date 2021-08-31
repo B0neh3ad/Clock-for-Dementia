@@ -32,6 +32,7 @@ def select_tab(event):
     elif event.char == '3':
         tabs_control.select(setting_tab)
 
+'''
 # GPIO setting
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(GPIO_LEFT, GPIO.IN)
@@ -40,6 +41,7 @@ GPIO.setup(GPIO_HOUR, GPIO.IN)
 GPIO.setup(GPIO_MINUTE, GPIO.IN)
 GPIO.setup(GPIO_SELECT, GPIO.IN)
 GPIO.setup(GPIO_BUZZER, GPIO.OUT)
+'''
 
 # Make datetime object from RTC module
 real_time = DS1302()
