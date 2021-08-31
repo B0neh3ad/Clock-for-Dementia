@@ -1,19 +1,18 @@
-from tkinter import Label, Tk 
-import time
-from setting import *
+from setting import BACKGROUND, FOREGROUND
+from tkinter import *
+from tkinter import ttk
 
-app_window = Tk() 
-app_window.title("My Digital Time") 
-app_window.geometry("350x150") 
-app_window.resizable(0,0)
+def enable(childList):
+    for child in childList:
+        child.configure(state='enable')
 
-label = Label(app_window, font=TEXT_FONT, bg=BACKGROUND, fg=FOREGROUND, bd=BORDER_WIDTH)
-label.place(relwidth=1)
+root = Tk()
+root.geometry("300x300")
+root.title("test_clock.py")
 
-def digital_clock(): 
-   time_live = time.strftime("%H:%M")
-   label.config(text=time_live) 
-   label.after(200, digital_clock)
+label1 = ttk.Label(root, padding=(10,10,10,10), background=BACKGROUND, borderwidth=2)
+label1.grid(column=0, row=0, padx=10, pady=10, sticky=N+S+E+W)
+label2 = ttk.Label(label1, text="yes", foreground=FOREGROUND, background=BACKGROUND)
+label2.pack(expand=True, fill=BOTH)
 
-digital_clock()
-app_window.mainloop()
+root.mainloop()
