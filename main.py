@@ -1,18 +1,18 @@
+#-*- coding:utf-8 -*-
+import RPi.GPIO as GPIO
 import tkinter
 import tkinter.ttk
 from tkinter.constants import *
 import datetime
-import platform
 from setting import *
 from math import *
+from pyRPiRTC import *
 
 # TODO: mode 변수 값에 따라 스크린 전환하는 쪽으로...
 mode = 0
 
 # TODO: 시작할 때 외부 파일 읽어서 menu_state 결정되도록.
 menu_state = []
-
-# TODO: 버저음은 따로 구현해야 됨
 
 def pos(width=WIDTH, height=HEIGHT, x=X, y=Y):
     '''
@@ -31,6 +31,18 @@ def select_tab(event):
         tabs_control.select(alarm_tab)
     elif event.char == '3':
         tabs_control.select(setting_tab)
+
+# GPIO setting
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(GPIO_LEFT, GPIO.IN)
+GPIO.setup(GPIO_RIGHT, GPIO.IN)
+GPIO.setup(GPIO_HOUR, GPIO.IN)
+GPIO.setup(GPIO_MINUTE, GPIO.IN)
+GPIO.setup(GPIO_SELECT, GPIO.IN)
+GPIO.setup(GPIO_BUZZER, GPIO.OUT)
+
+# Make datetime object from RTC module
+real_time = DS1302()
 
 # Set root window
 app_window = tkinter.Tk()
@@ -58,7 +70,7 @@ tabs_control.add(setting_tab, text="설정")
 
 tabs_control.pack(expand=True, fill=BOTH)
 
-# TODO: 알람 창은 어떻게 띄울까? -> 그냥 소리만 울리는 걸로...
+# TODO: 알람은 그냥 소리만 울리는 걸로...
 # (대충 알람 체크하고 울리는 코드)
 
 # 1. 시계
@@ -108,19 +120,22 @@ def clock():
     Fetch time data using 'datatime' module
     and with this data, set text of labels in clock tab
     '''
-    date_time = datetime.datetime.now().strftime("%Y년 %m/%d %H:%M")
-    wday = WEEKDAY[datetime.datetime.now().weekday()]
-    year, date, time1 = date_time.split()
-    season = get_season(int(date.split("/")[0]))
+    date_time = str(real_time.read_datetime())
+    wday = WEEKDAY[real_time.read_datetime().weekday()]
 
-    hour, minutes = time1.split(':')
+    temp_date, temp_time = date_time.split()
+    year, month, day = temp_date.split('-')
+    season = get_season(int(month))
+    date = '/'.join([month, day])
+
+    hour, minute = temp_time.split(':')
     part = get_part(int(hour))
     
     if int(hour) > 12 and int(hour) < 24:
         hour = str(int(hour) - 12)
         if len(hour) == 1:
             hour = '0' + hour
-    time = ":".join([hour, minutes])
+    time = ":".join([hour, minute])
     
     text_list = [date, wday, part, time, year, season]
 
@@ -258,16 +273,13 @@ for i in range(len(MENU)):
     buttons[-1].grid(row=i//3, column=i%3, sticky=N+S+E+W)
 
 # TODO: select 시 테두리 생기게 하는 거
-# TODO: bind 함수로 enter 쳤을 때 normal/disabled 왔다갔다 하게 하기
 app_window.bind("<Left>", change_selected_button)
 app_window.bind("<Right>", change_selected_button)
 app_window.bind("<Return>", change_button_state)
 
-# 화면 갱신될 때 얘는 어카냐?
 app_window.mainloop()
 
 # TODO: label state option으로 active/disabled 설정하여 이에 따라 자동으로 레이아웃 조정되도록...
-# TODO: 알람 시/분 active color 지정.
 # TODO: 스위치/버튼 제어 공부 -> 함수랑 binding
 # TODO: Bind 함수 이용해서 스위치/버튼 제어할 수 있나?
 # TODO: 일단 탭으로 구현해보고... 실제로는 탭 말고 input에 따라 함수 호출을 통한 "화면" 전환으로 가야할 듯
