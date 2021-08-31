@@ -6,7 +6,6 @@ import tkinter.ttk
 from tkinter.constants import *
 from time import sleep
 from setting import *
-from math import *
 from pyRPiRTC import *
 
 # TODO: mode 변수 값에 따라 스크린 전환하는 쪽으로...
@@ -33,7 +32,6 @@ def select_tab(event):
     '''
     Change selected tab according to occured event
     '''
-    # TODO: Raspberry Pi input으로 tab 결정
     if event.char == '1':
         tabs_control.select(clock_tab)
     elif event.char == '2':
@@ -88,9 +86,6 @@ tabs_control.add(setting_tab, text="설정")
 
 tabs_control.pack(expand=True, fill=BOTH)
 
-# TODO: 알람은 그냥 소리만 울리는 걸로...
-# (대충 알람 체크하고 울리는 코드)
-
 # 1. 시계
 clock_font_list = [H1_FONT, H2_FONT, H3_FONT]
 label_list = []
@@ -129,11 +124,33 @@ def get_season(month):
     
     return res
 
-# TODO: Raspberry Pi에서 시간 fetch -> 변수에 시간 저장
+def initialize_clock():
+    '''
+    Initialize clock tab
+    '''
+    global label_list
+    for widget in clock_tab.winfo_children():
+        widget.destroy()
+    print(label_list)
+
+    # 'label_list' should be initialized whenever this function is called
+    # because destroyed objects still remain in this list
+    label_list = []
+    for _ in range(6):
+        menu_state.append(NORMAL)
+        label_list.append(tkinter.Label(
+            clock_tab,
+            fg=FOREGROUND,
+            bg=BACKGROUND,
+            disabledforeground=BACKGROUND
+            ))
+        print(label_list)
+
 def clock(blink_state):
     '''
     Fetch time data using 'datatime' module
-    and with this data, set text of labels in clock tab
+    and with this data, Set text of labels in clock tab
+    Return value is time(24 hour)
     '''
     date_time = str(real_time.read_datetime())
     wday = WEEKDAY[real_time.read_datetime().weekday()]
@@ -146,6 +163,8 @@ def clock(blink_state):
 
     hour, minute = temp_time.split(':')[:-1]
     part = get_part(int(hour))
+
+    ret = datetime.time(int(hour), int(minute))
     
     if int(hour) > 12 and int(hour) < 24:
         hour = str(int(hour) - 12)
@@ -158,7 +177,11 @@ def clock(blink_state):
     for i in range(len(label_list)):
         label_list[i].config(text = text_list[i])
 
+    return ret
+    
 def refresh_clock():
+    initialize_clock()
+
     # Count rows and columns
     row_count = 0
     column_count = [0, 0, 0]
@@ -172,7 +195,7 @@ def refresh_clock():
     for i in range(3):
         for j in range(2):
             label_list[i*2+j].config(
-                font = clock_font_list[i if row_count == 3 else 0],
+                font = clock_font_list[i if row_count == 3 else 1],
                 state = menu_state[i*2+j]
                 )
 
@@ -180,6 +203,8 @@ def refresh_clock():
         clock_tab.columnconfigure(j, weight=1)
     for i in range(row_count):
         clock_tab.rowconfigure(i, weight=CLOCK_HEIGHT_RATE[row_count][i])
+    
+    print(column_count)
     
     # Edit grid
     row_index = 0
@@ -197,34 +222,28 @@ def refresh_clock():
                     column_index += 1
             row_index += 1
 
-# Set Grid and Make Widgets
-for i in range(3):
-    clock_tab.rowconfigure(i, weight=CLOCK_HEIGHT_RATE[3][i])
-    for j in range(2):
-        clock_tab.columnconfigure(j, weight=1)
-        label_list.append(tkinter.Label(
-            clock_tab,
-            font=clock_font_list[i],
-            fg=FOREGROUND,
-            bg=BACKGROUND,
-            state=NORMAL,
-            disabledforeground=BACKGROUND
-            ))
-        label_list[-1].grid(row=i, column=j, sticky=N+S+E+W)
+
+# Set grid and Make widgets
+refresh_clock()
+
 
 # 2. 알람
 selected_alarm = 0
-# 버튼이 눌렸는지 여부를 저장 -> 알람 켜고 끌 때 활용
-is_pressed = False
 # TODO: 외부에 알람 시간 저장해두고 불러오기
 alarm_time = []
 alarm_state = []
-remain_time = []
-# TODO: 남은 시간 분 단위로 저장하는 변수 만들고, 알람 울리고 나면 초기화
 
 # Set font style
 alarm_title_font = H3_FONT
 alarm_time_font = H1_FONT
+
+def check_alarm(now):
+    # Turn on/off alarm
+    flag = False
+    for i in range(len(alarm_time)):
+        if alarm_state[i] == NORMAL and alarm_time[i] == now:
+            flag = True
+    return flag
 
 def refresh_alarm():
     '''
@@ -232,10 +251,9 @@ def refresh_alarm():
     '''
     global selected_alarm
     alarm_title_label.config(text = "알람 %d" % (selected_alarm+1))
-    alarm_part = "오전" if alarm_time[selected_alarm].hour < 12 else "오후"
-    alarm_hour = alarm_time[selected_alarm].hour % 12 if alarm_time[selected_alarm].hour % 12 else 12
-    alarm_minute = alarm_time[selected_alarm].minute
-    alarm_time_label.config(text = "%s %02d:%02d" % (alarm_part, alarm_hour, alarm_minute), state = alarm_state[selected_alarm])
+    alarm_text = TIME_PART[alarm_time[selected_alarm].strftime("%p")]
+    alarm_text = ' '.join([alarm_text, alarm_time[selected_alarm].strftime("%I:%M")])
+    alarm_time_label.config(text = alarm_text, state = alarm_state[selected_alarm])
 
 def change_selected_alarm(event):
     '''
@@ -243,9 +261,9 @@ def change_selected_alarm(event):
     '''
     global selected_alarm
     if event.keysym == "Left":
-        selected_alarm = (selected_alarm-1)%3
+        selected_alarm = (selected_alarm-1)%ALARM_COUNT
     elif event.keysym == "Right":
-        selected_alarm = (selected_alarm+1)%3
+        selected_alarm = (selected_alarm+1)%ALARM_COUNT
     refresh_alarm()
 
 def change_alarm_state(event):
@@ -271,9 +289,8 @@ def update_alarm(event):
 
 # Initialize alarm data
 # TODO: 외부 데이터를 받아서 Initialize 하도록
-for i in range(3):
+for i in range(ALARM_COUNT):
     alarm_time.append(datetime.time(0, 0))
-    remain_time.append(datetime.time(23, 59))
     alarm_state.append(DISABLED)
 
 # Set grid
@@ -322,7 +339,6 @@ for col_index in range(SETTING_COLUNM_NUM):
 
 # Initialize button data
 for i in range(len(MENU)):
-    menu_state.append(NORMAL)
     borders.append(tkinter.Label(
         setting_tab,
         bg=BACKGROUND,
@@ -339,7 +355,7 @@ for i in range(len(MENU)):
         bg=BACKGROUND,
         disabledforeground=DISABLED_FG
     ))
-    borders[-1].grid(row=i//3, column=i%3, sticky=N+S+E+W)
+    borders[-1].grid(row=i//SETTING_COLUNM_NUM, column=i%SETTING_COLUNM_NUM, sticky=N+S+E+W)
     buttons[-1].grid(row=0, column=0, sticky=N+S+E+W, padx=SELECT_BORDERWIDTH, pady=SELECT_BORDERWIDTH)
 
 app_window.update()
@@ -348,17 +364,28 @@ app_window.update()
 # (time after program started: about m X 100ms, n == m % 10)
 time_cnt = 0
 
+# Represent whether any button has been pressed (for judging to turn on/off alarm)
+pressed = False
+
 # Mainloop
 try:
     while True:
         # Fetch and Show time data(span: 500ms)
         if time_cnt % 5 == 0:
-            clock(time_cnt // 5)
+            now_time = clock(time_cnt // 5)
+        
+        # Turn on/off alarm
+        alarm_flag = False
+        if check_alarm(now_time) and not pressed:
+            alarm_flag = True
+        pressed = False
         
         '''
         # Get GPIO button input
         for pin in Button_input.keys():
             Button_input[pin] = GPIO.input(pin)
+            if Button_input[pin] == 0: # if pressed
+                pressed = True
         '''
         '''
         # Get GPIO tab select input
@@ -374,7 +401,18 @@ try:
         current_tab = tabs_control.index('current')
 
         if current_tab == 1: # 알람
-            # Bind event functions - 알람 탭에 있는 경우만
+            '''
+            # button should be recognized in each function
+            # and parameter of functions should be removed
+            if Button_input[GPIO_LEFT] == 0 or Button_input[GPIO_RIGHT] == 0:
+                change_selected_alarm()
+            elif Button_input[GPIO_SELECT] == 0:
+                change_alarm_state()
+            elif Button_input[GPIO_UP] == 0 or Button_input[GPIO_DOWN] == 0:
+                if alarm_state[selected_alarm] == NORMAL:
+                    update_alarm()
+            '''
+            # Bind event functions - only if current tab is alarm one
             app_window.bind("<Left>", change_selected_alarm)
             app_window.bind("<Right>", change_selected_alarm)
             app_window.bind("<Return>", change_alarm_state)
@@ -382,8 +420,15 @@ try:
                 app_window.bind("<Up>", update_alarm)
                 app_window.bind("<Down>", update_alarm)
 
-        elif current_tab == 2: # 설정
-            # TODO: select 시 테두리 생기게 하는 거 -> label 2층으로 만들어서 구현!
+        elif current_tab == 2: # setting
+            '''
+            # button should be recognized in each function
+            # and parameter of functions should be removed
+            if Button_input[GPIO_LEFT] == 0 or Button_input[GPIO_RIGHT] == 0:
+                change_selected_button()
+            elif Button_input[GPIO_SELECT] == 0:
+                change_button_state()
+            '''
             app_window.bind("<Left>", change_selected_button)
             app_window.bind("<Right>", change_selected_button)
             app_window.bind("<Return>", change_button_state)
@@ -391,6 +436,9 @@ try:
             app_window.unbind("<Down>")
 
         else:
+            '''
+            this block(else ~~~) of codes would become needless
+            '''
             app_window.unbind("<Left>")
             app_window.unbind("<Right>")
             app_window.unbind("<Return>")
@@ -400,6 +448,12 @@ try:
         app_window.update()
         time_cnt += 1
         time_cnt %= 10
+
+        if alarm_flag and time_cnt < 5:
+            print("Alarm ON")
+            '''
+            GPIO.output(GPIO_ALARM, GPIO.HIGH)
+            '''
         sleep(.1)
 finally:
     '''
