@@ -1,6 +1,5 @@
 from setting import BACKGROUND, FOREGROUND
 from tkinter import *
-from tkinter import ttk
 
 def enable(childList):
     for child in childList:
@@ -10,9 +9,20 @@ root = Tk()
 root.geometry("300x300")
 root.title("test_clock.py")
 
-label1 = ttk.Label(root, padding=(10,10,10,10), background=BACKGROUND, borderwidth=2)
-label1.grid(column=0, row=0, padx=10, pady=10, sticky=N+S+E+W)
-label2 = ttk.Label(label1, text="yes", foreground=FOREGROUND, background=BACKGROUND)
-label2.pack(expand=True, fill=BOTH)
+'''
+for row_index in range(len(ALARM_HEIGHT_RATE)):
+    alarm_tab.rowconfigure(row_index, weight=ALARM_HEIGHT_RATE[row_index])
+alarm_tab.columnconfigure(0, weight=1)
+'''
+
+root.rowconfigure(0, weight=1)
+root.columnconfigure(0, weight=1)
+label1 = Label(root, background="#AAAAAA", bd=2, relief="solid")
+label1.grid(column=0, row=0, sticky=N+S+E+W)
+
+label1.rowconfigure(0, weight=1)
+label1.columnconfigure(0, weight=1)
+label2 = Label(label1, foreground=FOREGROUND, background=BACKGROUND)
+label2.grid(column=0, row=0, sticky=N+S+E+W, padx=10, pady=10)
 
 root.mainloop()
