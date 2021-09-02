@@ -14,14 +14,6 @@ mode = 0
 # TODO: 시작할 때 외부 파일 읽어서 menu_state 결정되도록.
 menu_state = []
 
-Button_input = {
-    GPIO_LEFT : 1,
-    GPIO_RIGHT : 1,
-    GPIO_HOUR : 1,
-    GPIO_MINUTE : 1,
-    GPIO_SELECT : 1
-}
-
 def pos(width=WIDTH, height=HEIGHT, x=X, y=Y):
     '''
     Return string showing position of root window
@@ -39,19 +31,9 @@ def select_tab(event):
     elif event.char == '3':
         tabs_control.select(setting_tab)
 
-'''
 # GPIO setting
 GPIO.setmode(GPIO.BOARD)
-GPIO.setup(GPIO_LEFT, GPIO.IN)
-GPIO.setup(GPIO_RIGHT, GPIO.IN)
-GPIO.setup(GPIO_HOUR, GPIO.IN)
-GPIO.setup(GPIO_MINUTE, GPIO.IN)
-GPIO.setup(GPIO_SELECT, GPIO.IN)
-GPIO.setup(GPIO_CLOCK, GPIO.IN)
-GPIO.setup(GPIO_ALARM, GPIO.IN)
-GPIO.setup(GPIO_SETTING, GPIO.IN)
 GPIO.setup(GPIO_BUZZER, GPIO.OUT)
-'''
 
 # Make datetime object from RTC module
 real_time = DS1302()
@@ -377,39 +359,11 @@ try:
         if check_alarm(now_time) and not pressed:
             alarm_flag = True
         pressed = False
-        
-        '''
-        # Get GPIO button input
-        for pin in Button_input.keys():
-            Button_input[pin] = GPIO.input(pin)
-            if Button_input[pin] == 0: # if pressed
-                pressed = True
-        '''
-        '''
-        # Get GPIO tab select input
-        current_tab = 0
-        for i in len(GPIO_TAB_LIST):
-            if GPIO.input(GPIO_TAB_LIST[i]) == 0:
-                current_tab = i
-                break
-        if tabs_control.index('current') != i:
-            tabs_control.select(TAB_NAME[i])
-        '''
+
         # Get keyboard tab select input
         current_tab = tabs_control.index('current')
 
         if current_tab == 1: # 알람
-            '''
-            # button should be recognized in each function
-            # and parameter of functions should be removed
-            if Button_input[GPIO_LEFT] == 0 or Button_input[GPIO_RIGHT] == 0:
-                change_selected_alarm()
-            elif Button_input[GPIO_SELECT] == 0:
-                change_alarm_state()
-            elif Button_input[GPIO_UP] == 0 or Button_input[GPIO_DOWN] == 0:
-                if alarm_state[selected_alarm] == NORMAL:
-                    update_alarm()
-            '''
             # Bind event functions - only if current tab is alarm one
             app_window.bind("<Left>", change_selected_alarm)
             app_window.bind("<Right>", change_selected_alarm)
@@ -419,14 +373,6 @@ try:
                 app_window.bind("<Down>", update_alarm)
 
         elif current_tab == 2: # setting
-            '''
-            # button should be recognized in each function
-            # and parameter of functions should be removed
-            if Button_input[GPIO_LEFT] == 0 or Button_input[GPIO_RIGHT] == 0:
-                change_selected_button()
-            elif Button_input[GPIO_SELECT] == 0:
-                change_button_state()
-            '''
             app_window.bind("<Left>", change_selected_button)
             app_window.bind("<Right>", change_selected_button)
             app_window.bind("<Return>", change_button_state)
@@ -434,9 +380,6 @@ try:
             app_window.unbind("<Down>")
 
         else:
-            '''
-            this block(else ~~~) of codes would become needless
-            '''
             app_window.unbind("<Left>")
             app_window.unbind("<Right>")
             app_window.unbind("<Return>")
@@ -449,17 +392,11 @@ try:
 
         if alarm_flag and time_cnt < 5:
             print("Alarm ON")
-            '''
-            GPIO.output(GPIO_ALARM, GPIO.HIGH)
-            '''
+            GPIO.output(GPIO_BUZZER, GPIO.HIGH)
         sleep(.1)
 finally:
-    '''
     GPIO.cleanup()
-    '''
 
-
-# TODO: 일단 탭으로 구현해보고... 실제로는 탭 말고 input에 따라 함수 호출을 통한 "화면" 전환으로 가야할 듯
 
 # TODO: 외부에 저장해야 하는 데이터
 #       - 설정에서 포함/배제 하기로 결정한 위젯
