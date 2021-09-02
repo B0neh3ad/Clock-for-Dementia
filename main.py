@@ -15,10 +15,8 @@ mode = 0
 menu_state = []
 
 Button_input = {
-    GPIO_LEFT : 1,
-    GPIO_RIGHT : 1,
-    GPIO_HOUR : 1,
-    GPIO_MINUTE : 1,
+    GPIO_NEXT : 1,
+    GPIO_ALARM : 1,
     GPIO_SELECT : 1
 }
 
@@ -50,15 +48,12 @@ def select_tab(event):
 
 # GPIO setting
 GPIO.setmode(GPIO.BOARD)
-GPIO.setup(GPIO_LEFT, GPIO.IN)
-GPIO.setup(GPIO_RIGHT, GPIO.IN)
-GPIO.setup(GPIO_HOUR, GPIO.IN)
-GPIO.setup(GPIO_MINUTE, GPIO.IN)
+GPIO.setup(GPIO_NEXT, GPIO.IN)
+GPIO.setup(GPIO_ALARM, GPIO.IN)
 GPIO.setup(GPIO_SELECT, GPIO.IN)
 
-GPIO.setup(GPIO_CLOCK, GPIO.IN)
-GPIO.setup(GPIO_ALARM, GPIO.IN)
-GPIO.setup(GPIO_SETTING, GPIO.IN)
+GPIO.setup(GPIO_TAB_PREV, GPIO.IN)
+GPIO.setup(GPIO_TAB_NEXT, GPIO.IN)
 
 GPIO.setup(GPIO_BUZZER, GPIO.OUT)
 
@@ -236,9 +231,10 @@ refresh_clock()
 
 # 2. 알람
 selected_alarm = 0
-# TODO: 외부에 알람 시간 저장해두고 불러오기
 alarm_time = []
 alarm_state = []
+# 0 - DISABLED / 1 - NORMAL(시 조정 가능) / 2 - NORMAL(분 조정 가능)
+alarm_mode = []
 
 # Set font style
 alarm_title_font = H3_FONT
@@ -267,9 +263,12 @@ def change_selected_alarm(event = None):
     Change selected alarm according to occured event
     '''
     global selected_alarm
-    if (event.keysym == "Left") if event else (Button_input[GPIO_LEFT] == 0):
-        selected_alarm = (selected_alarm-1)%ALARM_COUNT
-    elif (event.keysym == "Right") if event else (Button_input[GPIO_RIGHT] == 0):
+    if event:
+        if (event.keysym == "Left"):
+            selected_alarm = (selected_alarm-1)%ALARM_COUNT
+        elif (event.keysym == "Right"):
+            selected_alarm = (selected_alarm+1)%ALARM_COUNT
+    else:
         selected_alarm = (selected_alarm+1)%ALARM_COUNT
     refresh_alarm()
 
@@ -277,7 +276,9 @@ def change_alarm_state(event = None):
     '''
     Activate/Deactivate selected alarm
     '''
-    alarm_state[selected_alarm] = NORMAL if alarm_state[selected_alarm] == DISABLED else DISABLED
+    alarm_mode[selected_alarm] += 1
+    alarm_mode[selected_alarm] %= 3
+    alarm_state[selected_alarm] = DISABLED if alarm_mode[selected_alarm] == 0 else NORMAL
     refresh_alarm()
 
 def update_alarm(event = None):
@@ -287,10 +288,17 @@ def update_alarm(event = None):
     global selected_alarm
     hour = alarm_time[selected_alarm].hour
     minute = alarm_time[selected_alarm].minute
-    if (event.keysym == "Up") if event else (Button_input[GPIO_HOUR] == 0):
-        hour = (hour+1) % 24
-    elif (event.keysym == "Down") if event else (Button_input[GPIO_MINUTE] == 0):
-        minute = (minute+1) % 60
+    if event:
+        if (event.keysym == "Up"):
+            hour = (hour+1) % 24
+        elif (event.keysym == "Down"):
+            minute = (minute+1) % 60
+    else:
+        if alarm_mode[selected_alarm] == 1:
+            hour = (hour+1) % 24
+        elif alarm_mode[selected_alarm] == 2:
+            minute = (minute+1) % 60
+
     alarm_time[selected_alarm] = datetime.time(hour, minute)
     refresh_alarm()
 
@@ -299,6 +307,7 @@ def update_alarm(event = None):
 for i in range(ALARM_COUNT):
     alarm_time.append(datetime.time(14, 54))
     alarm_state.append(NORMAL)
+    alarm_state.append(1)
 
 # Set grid
 for row_index in range(len(ALARM_HEIGHT_RATE)):
@@ -327,10 +336,13 @@ def refresh_button():
 def change_selected_button(event = None):
     global selected_button
     borders[selected_button].config(state=NORMAL)
-    if (event.keysym == "Left") if event else (Button_input[GPIO_LEFT] == 0):
-        selected_button = (selected_button-1)%len(MENU)
-    elif (event.keysym == "Right") if event else (Button_input[GPIO_RIGHT] == 0):
-        selected_button = (selected_button+1)%len(MENU)
+    if event:
+        if (event.keysym == "Left"):
+            selected_button = (selected_button-1)%len(MENU)
+        elif (event.keysym == "Right"):
+            selected_button = (selected_button+1)%len(MENU)
+    else:
+        selected_button = (selected_button+1)%len(MENU)s
     borders[selected_button].config(state=ACTIVE)
 
 def change_button_state(event = None):
@@ -374,6 +386,8 @@ time_cnt = 0
 # Represent whether any button has been pressed (for judging to turn on/off alarm)
 pressed = False
 
+current_tab = 0
+
 # Mainloop
 try:
     while True:
@@ -395,13 +409,11 @@ try:
                 pressed = True
                 
         # Get GPIO tab select input
-        current_tab = tabs_control.index('current')
-        for i in range(len(GPIO_TAB_LIST)):
-            if GPIO.input(GPIO_TAB_LIST[i]) == 0:
-                print("pushed: tab[%d]" % i)
-                current_tab = i
-                pressed = True
-                break
+        if GPIO.input(GPIO_TAB_PREV) == 0:
+            current_tab = (current_tab-1)%3
+        elif GPIO.input(GPIO_TAB_NEXT) == 0:
+            current_tab = (current_tab+1)%3
+        
         if tabs_control.index('current') != current_tab:
             select_tab(current_tab)
         '''
@@ -409,18 +421,21 @@ try:
         current_tab = tabs_control.index('current')
         '''
 
+        # if alarm is ringing and button was just pressed
         if pressed and alarm_flag:
             alarm_flag = False
+        
         if current_tab == 1: # 알람
             # button should be recognized in each function
             # and parameter of functions should be removed
-            if Button_input[GPIO_LEFT] == 0 or Button_input[GPIO_RIGHT] == 0:
+            if Button_input[GPIO_NEXT] == 0:
                 change_selected_alarm()
             elif Button_input[GPIO_SELECT] == 0:
                 change_alarm_state()
-            elif Button_input[GPIO_HOUR] == 0 or Button_input[GPIO_MINUTE] == 0:
-                if alarm_state[selected_alarm] == NORMAL:
+            elif Button_input[GPIO_ALARM] == 0:
+                if alarm_state[select_tab] == NORMAL:
                     update_alarm()
+
             '''
             # Bind event functions - only if current tab is alarm one
             app_window.bind("<Left>", change_selected_alarm)
@@ -434,7 +449,7 @@ try:
         elif current_tab == 2: # setting
             # button should be recognized in each function
             # and parameter of functions should be removed
-            if Button_input[GPIO_LEFT] == 0 or Button_input[GPIO_RIGHT] == 0:
+            if Button_input[GPIO_NEXT] == 0:
                 change_selected_button()
             elif Button_input[GPIO_SELECT] == 0:
                 change_button_state()
