@@ -54,11 +54,11 @@ MENU = ["날짜", "요일", "시간대", "시간", "연도", "계절"]
 TIME_PART = {"AM": "오전", "PM": "오후"}
 
 # GPIO input/output
-GPIO_LEFT = 23
-GPIO_RIGHT = 32
-GPIO_HOUR = 33
-GPIO_MINUTE = 35
-GPIO_SELECT = 36
+GPIO_LEFT = 36
+GPIO_RIGHT = 33
+GPIO_HOUR = 23
+GPIO_MINUTE = 32
+GPIO_SELECT = 35
 
 GPIO_CLOCK = 40
 GPIO_ALARM = 38
