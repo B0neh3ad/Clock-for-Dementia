@@ -305,9 +305,15 @@ def update_alarm(event = None):
 # Initialize alarm data
 # TODO: 외부 데이터를 받아서 Initialize 하도록
 for i in range(ALARM_COUNT):
+<<<<<<< HEAD
     alarm_time.append(datetime.time(0, 0))
     alarm_state.append(DISABLED)
     alarm_mode.append(1)
+=======
+    alarm_time.append(datetime.time(14, 54))
+    alarm_state.append(NORMAL)
+    alarm_state.append(1)
+>>>>>>> 15ea38904e5d61723ba12ff0fde494aff0f4711c
 
 # Set grid
 for row_index in range(len(ALARM_HEIGHT_RATE)):
@@ -342,7 +348,11 @@ def change_selected_button(event = None):
         elif (event.keysym == "Right"):
             selected_button = (selected_button+1)%len(MENU)
     else:
+<<<<<<< HEAD
         selected_button = (selected_button+1)%len(MENU)
+=======
+        selected_button = (selected_button+1)%len(MENU)s
+>>>>>>> 15ea38904e5d61723ba12ff0fde494aff0f4711c
     borders[selected_button].config(state=ACTIVE)
 
 def change_button_state(event = None):
@@ -433,7 +443,11 @@ try:
             elif Button_input[GPIO_SELECT] == 0:
                 change_alarm_state()
             elif Button_input[GPIO_ALARM] == 0:
+<<<<<<< HEAD
                 if alarm_state[selected_alarm] == NORMAL:
+=======
+                if alarm_state[select_tab] == NORMAL:
+>>>>>>> 15ea38904e5d61723ba12ff0fde494aff0f4711c
                     update_alarm()
 
             '''

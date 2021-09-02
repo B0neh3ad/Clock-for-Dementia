@@ -2,16 +2,27 @@ import RPi.GPIO as GPIO
 from time import sleep
 from setting import *
 
+<<<<<<< HEAD
 outp = GPIO_BUZZER
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(outp, GPIO.OUT)
+=======
+outp = GPIO_SELECT
+GPIO.setmode(GPIO.BOARD)
+GPIO.setup(outp, GPIO.IN)
+>>>>>>> 15ea38904e5d61723ba12ff0fde494aff0f4711c
 
 time_cnt = 0
 try:
     while True:
+<<<<<<< HEAD
         GPIO.output(outp, GPIO.HIGH)
         sleep(.1)
         GPIO.output(outp, GPIO.LOW)
+=======
+        if GPIO.input(outp) == 0:
+            print("pressed")
+>>>>>>> 15ea38904e5d61723ba12ff0fde494aff0f4711c
         sleep(.1)
 finally:
     GPIO.cleanup()

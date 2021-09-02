@@ -56,9 +56,16 @@ TIME_PART = {"AM": "오전", "PM": "오후"}
 # GPIO input/output
 GPIO_NEXT = 36
 GPIO_ALARM = 33
+<<<<<<< HEAD
 
 GPIO_TAB_PREV = 40
 GPIO_TAB_NEXT = 38
 GPIO_SELECT = 37
+=======
+GPIO_SELECT = 37
+
+GPIO_TAB_PREV = 40
+GPIO_TAB_NEXT = 38
+>>>>>>> 15ea38904e5d61723ba12ff0fde494aff0f4711c
 
 GPIO_BUZZER = 21
